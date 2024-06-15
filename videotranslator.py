@@ -50,25 +50,39 @@ def selectframe (video_path,time_sec):
     return frame
 
 
-def selectROIs(frame, time_sec):
+def selectROIs(frame, time_sec, video_path):
+    # Resize the frame to 1280x720 for ROI selection
+    frame_resized = cv2.resize(frame, (1280, 720))
 
-    # Select a ROI for the Chinese text, but if the user press q close the window, time_sec += 10 and try again
     while True:
-        roichino = cv2.selectROI("Select ROI for Chinese text", frame, fromCenter=False, showCrosshair=True)
-        if roichino == (0,0,0,0):
+        roichino_resized = cv2.selectROI("Select ROI for Chinese text", frame_resized, fromCenter=False, showCrosshair=True)
+        if roichino_resized == (0, 0, 0, 0):
             time_sec += 10
-            frame = selectframe(video_path,time_sec)
+            frame = selectframe(video_path, time_sec)
+            frame_resized = cv2.resize(frame, (1280, 720))
             continue
         else:
             break
 
-    # Select a ROI for the English text
-
-    roienglish = cv2.selectROI("Select ROI for translated text", frame, fromCenter=False, showCrosshair=True)
-
-    # Destroy the windows
+    roienglish_resized = cv2.selectROI("Select ROI for translated text", frame_resized, fromCenter=False, showCrosshair=True)
     cv2.destroyAllWindows()
-    return roichino,roienglish
+
+    # Scale ROIs back to the original frame size
+    roichino = (
+        int(roichino_resized[0] * frame.shape[1] / 1280),
+        int(roichino_resized[1] * frame.shape[0] / 720),
+        int(roichino_resized[2] * frame.shape[1] / 1280),
+        int(roichino_resized[3] * frame.shape[0] / 720)
+    )
+
+    roienglish = (
+        int(roienglish_resized[0] * frame.shape[1] / 1280),
+        int(roienglish_resized[1] * frame.shape[0] / 720),
+        int(roienglish_resized[2] * frame.shape[1] / 1280),
+        int(roienglish_resized[3] * frame.shape[0] / 720)
+    )
+
+    return roichino, roienglish
 
 def translation(frame,roichino,roienglish):
     subschino = frame[int(roichino[1]):int(roichino[1]+roichino[3]), int(roichino[0]):int(roichino[0]+roichino[2])]
